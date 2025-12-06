@@ -1,10 +1,9 @@
 # =========================================================================
-# BIST ANALYST - CRON JOBS (v2 - Akıllı Zamanlayıcı)
+# BIST ANALYST - CRON JOBS (v3 - Virtual Environment)
 # =========================================================================
-# Python yolunu öğrenmek için terminale 'which python3.11' yazın.
-# Bu sistemde: /opt/homebrew/bin/python3.11
+# Virtual environment Python kullanıyoruz (global yerine)
 
-PYTHON=/opt/homebrew/bin/python3.11
+PYTHON=/Users/ademcelik/Desktop/bist_analyst/.venv/bin/python
 PROJECT=/Users/ademcelik/Desktop/bist_analyst
 
 # -------------------------------------------------------------------------
