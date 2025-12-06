@@ -1,0 +1,79 @@
+# =========================================================================
+# BIST ANALYST - CRON JOBS (v2 - Akıllı Zamanlayıcı)
+# =========================================================================
+# Python yolunu öğrenmek için terminale 'which python3.11' yazın.
+# Bu sistemde: /opt/homebrew/bin/python3.11
+
+PYTHON=/opt/homebrew/bin/python3.11
+PROJECT=/Users/ademcelik/Desktop/bist_analyst
+
+# -------------------------------------------------------------------------
+# 1. HAFTALIK GÖREV: Ticker Listesi Güncelleme (Pazar 23:00)
+# -------------------------------------------------------------------------
+0 23 * * 0 $PYTHON $PROJECT/fetch_tickers.py >> $PROJECT/logs/cron_ticker.log 2>&1
+
+# -------------------------------------------------------------------------
+# 2. YILLIK GÖREV: Tatil Takvimi Güncelleme (Ocak 1-7, 00:05)
+# -------------------------------------------------------------------------
+5 0 1-7 1 * $PYTHON $PROJECT/auto_update_holidays.py >> $PROJECT/logs/cron_holidays.log 2>&1
+
+# -------------------------------------------------------------------------
+# 3. GÜNLÜK GÖREV: Akıllı Veri Güncelleme (Hafta içi, çoklu saat)
+# -------------------------------------------------------------------------
+# Normal mesai için 18:35 (18:10 kapanış + 25 dk)
+35 18 * * 1-5 $PYTHON $PROJECT/smart_scheduler.py --update >> $PROJECT/logs/cron_data.log 2>&1
+
+# Yarım gün mesai için 13:05 (13:00 kapanış + 5 dk)
+5 13 * * 1-5 $PYTHON $PROJECT/smart_scheduler.py --update >> $PROJECT/logs/cron_data.log 2>&1
+
+# -------------------------------------------------------------------------
+# 4. GÜNLÜK GÖREV: Sinyal Tarama ve Telegram (Veri çekiminden 5 dk sonra)
+# -------------------------------------------------------------------------
+# Normal mesai sonrası tarama (18:40)
+40 18 * * 1-5 $PYTHON $PROJECT/scanner_xtumy.py --telegram >> $PROJECT/logs/cron_scanner.log 2>&1
+
+# Yarım gün mesai sonrası tarama (13:10)
+10 13 * * 1-5 $PYTHON $PROJECT/scanner_xtumy.py --telegram >> $PROJECT/logs/cron_scanner.log 2>&1
+
+# -------------------------------------------------------------------------
+# 5. GÜNLÜK GÖREV: Sistem Sağlık Kontrolü (Her sabah 09:00)
+# -------------------------------------------------------------------------
+0 9 * * * $PYTHON $PROJECT/health_check.py >> $PROJECT/logs/cron_health.log 2>&1
+
+# =========================================================================
+# NOT: 
+# - Smart scheduler otomatik olarak yarım gün/normal gün kontrol eder
+# - Tatil günlerinde ve hafta sonlarında otomatik olarak çalışmaz
+# - Her iki saatte de job çalışır ama smart_scheduler içinden kontrol edilir
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# KURULUM ADIMLARI:
+# -------------------------------------------------------------------------
+# 1. Crontab'ı aç: crontab -e
+# 2. Yukarıdaki satırları kopyala (ya da referans al)
+# 3. Kaydet ve çık (vi: ESC, :wq, ENTER)
+# 4. Kontrol et: crontab -l
+#
+# macOS İzin Ayarı:
+# System Settings > Privacy & Security > Full Disk Access
+# /usr/sbin/cron'u ekle
+# -------------------------------------------------------------------------
+
+# =========================================================================
+# CRON ZAMAN FORMATI REFERANSI
+# =========================================================================
+# * * * * * komut
+# │ │ │ │ │
+# │ │ │ │ └─── Haftanın günü (0-7, 0 ve 7 Pazar)
+# │ │ │ └───── Ay (1-12)
+# │ │ └─────── Ayın günü (1-31)
+# │ └───────── Saat (0-23)
+# └─────────── Dakika (0-59)
+#
+# Özel semboller:
+# * : Her değer
+# , : Birden fazla değer (örn: 1,3,5)
+# - : Aralık (örn: 1-5)
+# / : Her X'inci (örn: */5 = her 5'te bir)
+# =========================================================================

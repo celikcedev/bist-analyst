@@ -1,0 +1,30 @@
+# BIST Analyst - Environment Configuration
+# =========================================
+# Copy this file to .env and fill in your actual values
+# Command: cp .example-env .env
+
+# Database Configuration
+DB_USER=postgres
+DB_PASS=Acelik5225.
+DB_HOST=localhost
+DB_NAME=trading_db
+
+# TradingView Credentials
+TV_USERNAME=mysound74@hotmail.com
+TV_PASSWORD=bizlerbizler0
+
+# Telegram Bot Configuration
+# Single user (comma-separated for multiple):
+TELEGRAM_BOT_TOKEN=8259413466:AAEXta1hvCmdgSWwBkt8UjuIOFuZc4b0zgI
+TELEGRAM_CHAT_ID=6039841722,719605579
+# Note: Get your chat ID from @userinfobot on Telegram
+# Add multiple chat IDs separated by commas (no spaces)
+ENABLE_TELEGRAM=true
+
+# Scanner Configuration
+ENABLE_AUTO_SCAN=true
+SCAN_AFTER_UPDATE=true
+
+# Logging
+LOG_LEVEL=INFO
+

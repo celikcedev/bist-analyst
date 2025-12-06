@@ -1,0 +1,12 @@
+pandas
+sqlalchemy
+psycopg2-binary
+tradingview-screener
+tvdatafeed
+numpy
+beautifulsoup4
+requests
+python-dotenv
+flask
+flask-cors
+
