@@ -55,4 +55,6 @@ logs/
 # Project Specific
 /tmp/
 *.pyc
+scanner_output.txt
+scanner_xtumy_v2.py
 
