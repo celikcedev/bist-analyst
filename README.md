@@ -257,8 +257,8 @@ crontab -e
 ```
 
 ```cron
-# Değişkenler
-PYTHON=/opt/homebrew/bin/python3.11
+# Değişkenler (Virtual Environment kullanıyoruz)
+PYTHON=/path/to/bist_analyst/.venv/bin/python
 PROJECT=/path/to/bist_analyst
 
 # Health check (Her sabah 09:00)
