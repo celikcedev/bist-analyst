@@ -64,7 +64,7 @@ class SignalHistory(Base):
     price_at_signal = Column(Numeric(10, 2))
     rsi = Column(Numeric(5, 2))
     adx = Column(Numeric(5, 2))
-    metadata = Column(JSONB)  # Extra signal data
+    signal_metadata = Column('metadata', JSONB)  # Extra signal data (renamed column to avoid SQLAlchemy conflict)
     created_at = Column(DateTime(timezone=False), default=func.now(), nullable=False)
     
     __table_args__ = (
