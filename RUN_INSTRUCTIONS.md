@@ -1,30 +1,33 @@
-# BIST Analyst - Çalıştırma Talimatları
+# BIST Analyst - DOĞRU Çalıştırma Talimatları
 
-## 🚀 Hızlı Başlangıç
+## ⚠️ ÖNEMLİ: Virtual Environment Kullanın!
 
-### ⚠️ ÖNEMLI: macOS Port 5000 Sorunu
-
-macOS'ta port 5000 AirPlay Receiver tarafından kullanılıyor. **Port 5001** kullanıyoruz.
+Projenizde `.venv` klasörü var, bunu kullanmalısınız!
 
 ---
 
-### 1. Backend API'yi Başlat (Port 5001)
+## 🚀 DOĞRU KULLANIM
+
+### Terminal 1 - Backend (Virtual Environment ile):
 
 ```bash
 cd /Users/ademcelik/Desktop/bist_analyst
-PORT=5001 python3 run_backend.py
+
+# Virtual environment aktifleştir
+source .venv/bin/activate
+
+# Backend başlat (port 5001)
+PORT=5001 python run_backend.py
 ```
 
-Backend şurada çalışacak: **http://localhost:5001**
-
-Test et:
-```bash
-curl http://localhost:5001/api/health
+**Göreceğiniz:**
+```
+🚀 Starting BIST Analyst API on port 5001
+ * Serving Flask app 'backend.main'
+ * Running on http://127.0.0.1:5001
 ```
 
----
-
-### 2. Frontend (Main App) Başlat
+### Terminal 2 - Frontend:
 
 ```bash
 cd /Users/ademcelik/Desktop/bist_analyst/frontend/main-app
@@ -33,60 +36,40 @@ cd /Users/ademcelik/Desktop/bist_analyst/frontend/main-app
 npm run dev
 ```
 
-Frontend şurada çalışacak: **http://localhost:3000**
-
-**Not:** `.env.local` otomatik olarak port 5001'e ayarlı.
-
----
-
-### 3. Browser'da Test Et
-
-1. Backend health: http://localhost:5001/api/health
-2. Frontend: http://localhost:3000
-3. Landing page'de veri görüyor musun
-
----
-
-## 🐛 Sorun Giderme
-
-### "Address already in use" (Port 5000)
-
-**Çözüm:** Port 5001 kullan:
-```bash
-PORT=5001 python3 run_backend.py
+**Göreceğiniz:**
+```
+▲ Next.js 16.0.7
+- Local: http://localhost:3000
+✓ Ready in 477ms
 ```
 
-### "Network Error" on Frontend
+---
 
-**Çözüm:** 
-1. Backend'in port 5001'de çalıştığından emin ol
-2. `.env.local` dosyasında `NEXT_PUBLIC_API_URL=http://localhost:5001` olmalı
-3. Frontend'i yeniden başlat (Ctrl+C, sonra `npm run dev`)
+## ✅ TEST
+
+1. **Backend:** http://localhost:5001/api/health
+2. **Frontend:** http://localhost:3000
+
+**Landing Page'de:**
+- ✅ Toplam Hisse: 593
+- ✅ Aktif Hisse: 593
+- ✅ Veri Noktası: 0 (normal - henüz data çekilmemiş)
+- ✅ "Screener (Yakında)" butonu
 
 ---
 
-## ✅ Doğru Kullanım
+## 🎯 Şimdi Durum:
 
-### Terminal 1 (Backend):
-```bash
-cd /Users/ademcelik/Desktop/bist_analyst
-PORT=5001 python3 run_backend.py
-```
-
-### Terminal 2 (Frontend):
-```bash
-cd /Users/ademcelik/Desktop/bist_analyst/frontend/main-app
-npm run dev
-```
-
-**Not:** Frontend'i başlattıktan sonra browser'da otomatik açılacak veya http://localhost:3000'e git.
+✅ Sprint 0, 1, 2, 3 TAMAMLANDI
+✅ Backend API çalışıyor
+✅ Frontend landing page çalışıyor
+🚀 **Sprint 4 - Screener UI geliştirme için HAZIR!**
 
 ---
 
-## 🎯 Şimdi Test Et:
+## 💡 Not:
 
-1. ✅ Backend çalışıyor mu: http://localhost:5001/api/health
-2. ✅ Frontend çalışıyor mu: http://localhost:3000
-3. ✅ Landing page veri gösteriyor mu?
-
-Tüm testler başarılıysa **Sprint 4 - Screener UI** ile devam edebiliriz! 🚀
+"Screener" butonu şu an için placeholder. Sprint 4'te:
+- Screener app (port 3001) oluşturulacak
+- Signal table, filters, charts eklenecek
+- TradingView entegrasyonu yapılacak
