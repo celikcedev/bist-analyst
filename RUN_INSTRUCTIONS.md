@@ -2,27 +2,24 @@
 
 ## 🚀 Hızlı Başlangıç
 
-### 1. Backend API'yi Başlat
+### ⚠️ ÖNEMLI: macOS Port 5000 Sorunu
 
-**Yöntem 1: Wrapper Script (Önerilen)**
+macOS'ta port 5000 AirPlay Receiver tarafından kullanılıyor. **Port 5001** kullanıyoruz.
+
+---
+
+### 1. Backend API'yi Başlat (Port 5001)
+
 ```bash
-# Project root'tan çalıştır
 cd /Users/ademcelik/Desktop/bist_analyst
-python3 run_backend.py
+PORT=5001 python3 run_backend.py
 ```
 
-**Yöntem 2: Direct**
-```bash
-# Project root'tan çalıştır
-cd /Users/ademcelik/Desktop/bist_analyst
-python3 -m backend.main
-```
-
-Backend şurada çalışacak: **http://localhost:5000**
+Backend şurada çalışacak: **http://localhost:5001**
 
 Test et:
 ```bash
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 ```
 
 ---
@@ -30,11 +27,7 @@ curl http://localhost:5000/api/health
 ### 2. Frontend (Main App) Başlat
 
 ```bash
-# Main app dizinine git
 cd /Users/ademcelik/Desktop/bist_analyst/frontend/main-app
-
-# İlk kez çalıştırıyorsan dependencies yükle
-npm install
 
 # Development server başlat
 npm run dev
@@ -42,11 +35,13 @@ npm run dev
 
 Frontend şurada çalışacak: **http://localhost:3000**
 
+**Not:** `.env.local` otomatik olarak port 5001'e ayarlı.
+
 ---
 
 ### 3. Browser'da Test Et
 
-1. Backend çalışıyor mu: http://localhost:5000/api/health
+1. Backend health: http://localhost:5001/api/health
 2. Frontend: http://localhost:3000
 3. Landing page'de veri görüyor musun
 
@@ -54,43 +49,19 @@ Frontend şurada çalışacak: **http://localhost:3000**
 
 ## 🐛 Sorun Giderme
 
-### Backend: "ModuleNotFoundError: No module named 'backend'"
+### "Address already in use" (Port 5000)
 
-**Çözüm:** `run_backend.py` kullan veya project root'tan çalıştır:
+**Çözüm:** Port 5001 kullan:
 ```bash
-cd /Users/ademcelik/Desktop/bist_analyst  # Project root
-python3 run_backend.py
+PORT=5001 python3 run_backend.py
 ```
 
-### Frontend: "Could not read package.json"
+### "Network Error" on Frontend
 
-**Çözüm:** `frontend/main-app` dizininde olduğundan emin ol:
-```bash
-cd /Users/ademcelik/Desktop/bist_analyst/frontend/main-app
-npm run dev
-```
-
-### CORS Hatası
-
-**Çözüm:** Backend'in çalıştığından emin ol. Frontend backend'e ulaşamıyorsa CORS hatası verir.
-
----
-
-## 📁 Dizin Yapısı
-
-```
-bist_analyst/
-├── run_backend.py          ← Backend başlatıcı (BU DOSYAYI KULLAN)
-├── backend/
-│   ├── main.py             ← Flask app
-│   ├── core/               ← Config, database
-│   └── modules/            ← Screener, market_data
-├── frontend/
-│   └── main-app/           ← Next.js app (CD BU DİZİNE)
-│       ├── package.json
-│       └── app/
-└── scripts/                ← CLI tools
-```
+**Çözüm:** 
+1. Backend'in port 5001'de çalıştığından emin ol
+2. `.env.local` dosyasında `NEXT_PUBLIC_API_URL=http://localhost:5001` olmalı
+3. Frontend'i yeniden başlat (Ctrl+C, sonra `npm run dev`)
 
 ---
 
@@ -99,7 +70,7 @@ bist_analyst/
 ### Terminal 1 (Backend):
 ```bash
 cd /Users/ademcelik/Desktop/bist_analyst
-python3 run_backend.py
+PORT=5001 python3 run_backend.py
 ```
 
 ### Terminal 2 (Frontend):
@@ -108,11 +79,14 @@ cd /Users/ademcelik/Desktop/bist_analyst/frontend/main-app
 npm run dev
 ```
 
+**Not:** Frontend'i başlattıktan sonra browser'da otomatik açılacak veya http://localhost:3000'e git.
+
 ---
 
-## 🎯 Sıradaki Adımlar
+## 🎯 Şimdi Test Et:
 
-1. ✅ Backend çalışıyor (port 5000)
-2. ✅ Frontend çalışıyor (port 3000)
-3. ✅ Landing page veri gösteriyor
-4. 🚀 Sprint 4 - Screener UI geliştirme başlayabilir!
+1. ✅ Backend çalışıyor mu: http://localhost:5001/api/health
+2. ✅ Frontend çalışıyor mu: http://localhost:3000
+3. ✅ Landing page veri gösteriyor mu?
+
+Tüm testler başarılıysa **Sprint 4 - Screener UI** ile devam edebiliriz! 🚀
