@@ -1,7 +1,14 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
 from tvDatafeed import TvDatafeed, Interval
-from config import DB_CONNECTION_STR, LOG_DIR
+import sys
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from backend.core.config import DB_CONNECTION_STR, LOG_DIR, TV_USERNAME, TV_PASSWORD
 import logging
 import time
 
@@ -51,8 +58,12 @@ def get_missing_days_count(engine, symbol):
 
 def run_daily_update():
     engine = create_engine(DB_CONNECTION_STR)
-    # TradingView credentials kullanarak bağlan
-    tv = TvDatafeed(username='mysound74@hotmail.com', password='Acelik5225.')
+    
+    # TradingView credentials from environment variables
+    if not TV_USERNAME or not TV_PASSWORD:
+        raise ValueError("TV_USERNAME and TV_PASSWORD must be set in .env file")
+    
+    tv = TvDatafeed(username=TV_USERNAME, password=TV_PASSWORD)
     
     logging.info("Günlük veri güncelleme rutini başladı.")
     

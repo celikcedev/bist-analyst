@@ -2,7 +2,14 @@ import pandas as pd
 from tradingview_screener import Query, Column
 from sqlalchemy import create_engine, text
 from datetime import datetime
-from config import DB_CONNECTION_STR, LOG_DIR
+import sys
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from backend.core.config import DB_CONNECTION_STR, LOG_DIR
 import logging
 
 # Log Ayarları

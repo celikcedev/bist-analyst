@@ -51,8 +51,13 @@ def get_missing_days_count(engine, symbol):
 
 def run_daily_update():
     engine = create_engine(DB_CONNECTION_STR)
-    # TradingView credentials kullanarak bağlan
-    tv = TvDatafeed(username='mysound74@hotmail.com', password='Acelik5225.')
+    
+    # TradingView credentials from environment variables
+    from config import TV_USERNAME, TV_PASSWORD
+    if not TV_USERNAME or not TV_PASSWORD:
+        raise ValueError("TV_USERNAME and TV_PASSWORD must be set in .env file")
+    
+    tv = TvDatafeed(username=TV_USERNAME, password=TV_PASSWORD)
     
     logging.info("Günlük veri güncelleme rutini başladı.")
     
