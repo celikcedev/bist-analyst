@@ -6,9 +6,15 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from sqlalchemy import create_engine, text
 from datetime import datetime, time
-from config import DB_CONNECTION_STR
+import sys
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from backend.core.config import DB_CONNECTION_STR, LOG_DIR
 import logging
-from config import LOG_DIR
 
 logging.basicConfig(filename=f'{LOG_DIR}/bist_calendar.log', level=logging.INFO,
                     format='%(asctime)s - %(message)s')
