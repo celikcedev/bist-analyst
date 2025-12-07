@@ -5,18 +5,18 @@
 
 # Database Configuration
 DB_USER=postgres
-DB_PASS=Acelik5225.
+DB_PASS= password type here
 DB_HOST=localhost
-DB_NAME=trading_db
+DB_NAME=DB Name type here
 
 # TradingView Credentials
-TV_USERNAME=mysound74@hotmail.com
-TV_PASSWORD=bizlerbizler0
+TV_USERNAME=username or email
+TV_PASSWORD=password type here
 
 # Telegram Bot Configuration
 # Single user (comma-separated for multiple):
-TELEGRAM_BOT_TOKEN=8259413466:AAEXta1hvCmdgSWwBkt8UjuIOFuZc4b0zgI
-TELEGRAM_CHAT_ID=6039841722,719605579
+TELEGRAM_BOT_TOKEN= token from botfather
+TELEGRAM_CHAT_ID= chat id of the user you want to send the messages to
 # Note: Get your chat ID from @userinfobot on Telegram
 # Add multiple chat IDs separated by commas (no spaces)
 ENABLE_TELEGRAM=true

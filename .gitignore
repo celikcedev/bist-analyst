@@ -58,3 +58,17 @@ logs/
 scanner_output.txt
 scanner_xtumy_v2.py
 
+
+# Documentation (keep only README.md in repo)
+COMPLETED_STEPS.md
+NEXT_STEPS.md
+PINE_SCRIPT_TRANSLATION.md
+future-development-steps.md
+DASHBOARD_SETUP.md
+TODAY_COMPLETED.md
+CHANGELOG.md
+ARCHITECTURE.md
+DEPLOYMENT.md
+API_REFERENCE.md
+STRATEGY_DEVELOPMENT.md
+USER_GUIDE.md
