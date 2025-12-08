@@ -67,14 +67,10 @@ export default function Home() {
             </div>
             <div className="flex gap-4">
               <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Screener UI yakında! Sprint 4\'te geliştirilecek.');
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer"
+                href="http://localhost:3001"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
-                Screener (Yakında)
+                Screener →
               </a>
             </div>
           </div>
@@ -175,12 +171,12 @@ export default function Home() {
           )}
 
           <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <button
-              onClick={() => alert('Screener UI Sprint 4\'te geliştirilecek!')}
-              className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+            <a
+              href="http://localhost:3001"
+              className="text-blue-600 hover:text-blue-800 font-medium"
             >
-              Tüm sinyalleri görüntüle (Yakında) →
-            </button>
+              Tüm sinyalleri görüntüle →
+            </a>
           </div>
         </div>
 
