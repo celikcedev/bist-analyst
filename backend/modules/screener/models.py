@@ -43,6 +43,10 @@ class StrategyParameter(Base):
     strategy_id = Column(Integer, ForeignKey('strategies.id'), nullable=False)
     parameter_name = Column(String(100), nullable=False)
     parameter_value = Column(JSONB, nullable=False)  # Stores any type: int, float, str, bool
+    parameter_type = Column(String(20), default='str')  # 'int', 'float', 'str', 'bool'
+    display_name = Column(String(200))  # Human-readable name for UI
+    display_group = Column(String(100))  # Group name for UI (e.g., "MAIN TREND SETTINGS")
+    display_order = Column(Integer, default=999)  # Order in UI
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=False), default=func.now(), nullable=False)
     

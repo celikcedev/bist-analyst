@@ -56,12 +56,12 @@ def list_strategies():
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 
-@screener_bp.route('/strategies/<int:strategy_id>/parameters', methods=['GET'])
-def get_strategy_parameters(strategy_id: int):
+@screener_bp.route('/strategies/<strategy_name>/parameters', methods=['GET'])
+def get_strategy_parameters(strategy_name: str):
     """
     Get parameters for a strategy.
     
-    GET /api/screener/strategies/:id/parameters?user_id=1
+    GET /api/screener/strategies/:name/parameters?user_id=1
     
     Query params:
         user_id: User ID (default: 1)
@@ -70,12 +70,18 @@ def get_strategy_parameters(strategy_id: int):
         {
             "strategy_id": 1,
             "strategy_name": "XTUMYV27Strategy",
-            "parameters": {
-                "pbWaitBars": 3,
-                "pullPct": 2.0,
+            "parameters": [
+                {
+                    "id": 1,
+                    "parameter_name": "pbWaitBars",
+                    "parameter_value": 3,
+                    "parameter_type": "int",
+                    "display_name": "Trend Oturma Süresi (Bar)",
+                    "display_group": "PULLBACK (GERİ ÇEKİLME) AYARLARI",
+                    "display_order": 1
+                },
                 ...
-            },
-            "is_default": true
+            ]
         }
     """
     try:
@@ -83,38 +89,46 @@ def get_strategy_parameters(strategy_id: int):
         
         with get_db_session() as session:
             # Get strategy
-            strategy = session.query(Strategy).filter(Strategy.id == strategy_id).first()
+            strategy = session.query(Strategy).filter(Strategy.name == strategy_name).first()
             
             if not strategy:
-                return jsonify({'error': 'Strategy not found'}), 404
+                return jsonify({'error': f'Strategy {strategy_name} not found'}), 404
+            
+            strategy_id = strategy.id
             
             # Get user parameters
             params_db = session.query(StrategyParameter).filter(
                 StrategyParameter.user_id == user_id,
                 StrategyParameter.strategy_id == strategy_id
-            ).all()
+            ).order_by(StrategyParameter.display_order).all()
             
             if not params_db:
-                # No custom parameters, return defaults
-                strategy_class = StrategyRegistry.get_strategy(strategy.name)
-                default_params = strategy_class.get_default_parameters()
-                
+                # No custom parameters, return empty list (frontend will handle defaults)
                 return jsonify({
                     'strategy_id': strategy_id,
                     'strategy_name': strategy.name,
-                    'parameters': default_params.model_dump(),
+                    'parameters': [],
                     'is_default': True
                 }), 200
             
-            # Build parameter dict
-            params_dict = {}
+            # Build parameter list with metadata
+            params_list = []
             for param in params_db:
-                params_dict[param.parameter_name] = param.parameter_value
+                params_list.append({
+                    'id': param.id,
+                    'strategy_id': param.strategy_id,
+                    'parameter_name': param.parameter_name,
+                    'parameter_value': param.parameter_value,
+                    'parameter_type': param.parameter_type,
+                    'display_name': param.display_name,
+                    'display_group': param.display_group,
+                    'display_order': param.display_order
+                })
             
             return jsonify({
                 'strategy_id': strategy_id,
                 'strategy_name': strategy.name,
-                'parameters': params_dict,
+                'parameters': params_list,
                 'is_default': False
             }), 200
     
@@ -122,12 +136,12 @@ def get_strategy_parameters(strategy_id: int):
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 
-@screener_bp.route('/strategies/<int:strategy_id>/parameters', methods=['PUT'])
-def update_strategy_parameters(strategy_id: int):
+@screener_bp.route('/strategies/<strategy_name>/parameters', methods=['PUT'])
+def update_strategy_parameters(strategy_name: str):
     """
     Update parameters for a strategy.
     
-    PUT /api/screener/strategies/:id/parameters
+    PUT /api/screener/strategies/:name/parameters
     
     Body:
         {
@@ -156,10 +170,12 @@ def update_strategy_parameters(strategy_id: int):
         
         with get_db_session() as session:
             # Get strategy
-            strategy = session.query(Strategy).filter(Strategy.id == strategy_id).first()
+            strategy = session.query(Strategy).filter(Strategy.name == strategy_name).first()
             
             if not strategy:
-                return jsonify({'error': 'Strategy not found'}), 404
+                return jsonify({'error': f'Strategy {strategy_name} not found'}), 404
+            
+            strategy_id = strategy.id
             
             # Validate parameters using Pydantic
             strategy_class = StrategyRegistry.get_strategy(strategy.name)
