@@ -48,8 +48,8 @@ def update_ticker_list():
         # haftalık güncellemeler için daha temizdir.
         
         with engine.connect() as conn:
-            # Tabloyu temizle (Opsiyonel: Eski hisseleri silmek istemiyorsanız bu satırı kaldırın)
-            conn.execute(text("TRUNCATE TABLE tickers CASCADE;")) 
+            # Eski hisseleri sil ama CASCADE kullanma (market_data'yı silmesin)
+            conn.execute(text("DELETE FROM tickers;")) 
             conn.commit()
             
         # DataFrame kolonlarını DB ile eşleştir

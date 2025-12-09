@@ -17,13 +17,13 @@ export default function ScreenerPage() {
   
   // All available signal types for XTUMY V27
   const allSignalTypes = [
-    'TREND_BAŞLANGIÇ',
-    'PULLBACK_AL',
-    'DIP_AL',
-    'ALTIN_KIRILIM',
-    'ZİRVE_KIRILIMI',
-    'DİRENÇ_REDDİ',
-    'KURUMSAL_DIP',
+    'KURUMSAL DİP',
+    'TREND BAŞLANGIÇ',
+    'PULLBACK AL',
+    'DİP AL',
+    'ALTIN KIRILIM',
+    'ZİRVE KIRILIMI',
+    'DİRENÇ REDDİ',
   ];
   
   const [visibleSignalTypes, setVisibleSignalTypes] = useState<string[]>(allSignalTypes.slice(0, 4));
@@ -88,22 +88,35 @@ export default function ScreenerPage() {
   return (
     <div className="min-h-screen bg-tv-dark-bg">
       {/* Header */}
-      <header className="bg-tv-dark-surface border-b border-tv-dark-border px-6 py-4">
+      <header className="bg-tv-dark-surface border-b border-tv-dark-border px-6 py-4 sticky top-0 z-50 backdrop-blur-xl bg-tv-dark-surface/90 shadow-lg">
         <div className="flex items-center justify-between max-w-[1920px] mx-auto">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-tv-dark-text flex items-center gap-2">
-              Pine Screener
-              <span className="text-xs px-2 py-0.5 bg-tv-dark-border text-tv-dark-textMuted rounded">
-                BETA
-              </span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow-md">
+                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 17l3-3 4 4 6-6 5 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M21 7v5h-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-success rounded-full border-2 border-tv-dark-surface animate-pulse"></div>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-tv-dark-text flex items-center gap-2">
+                  Python Screener
+                  <span className="text-xs px-2.5 py-0.5 bg-gradient-secondary text-white rounded-lg font-bold shadow-md">
+                    BETA
+                  </span>
+                </h1>
+                <p className="text-xs text-tv-dark-textMuted font-medium">Python-powered Signal Detection</p>
+              </div>
+            </div>
           </div>
           
           <a
             href="http://localhost:3000"
-            className="text-sm text-tv-dark-textMuted hover:text-tv-dark-text transition-colors"
+            className="text-sm text-tv-dark-textMuted hover:text-tv-dark-primary transition-all font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tv-dark-card"
           >
-            ← Ana Sayfa
+            <span>←</span>
+            <span>Ana Sayfa</span>
           </a>
         </div>
       </header>
@@ -111,42 +124,65 @@ export default function ScreenerPage() {
       {/* Main Content */}
       <main className="max-w-[1920px] mx-auto px-6 py-6">
         {/* Filter Bar */}
-        <div className="bg-tv-dark-surface border border-tv-dark-border rounded-lg p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <WatchlistSelector value={watchlist} onChange={setWatchlist} />
-            <StrategySelector value={strategy} onChange={setStrategy} />
-            
-            <button
-              onClick={() => setParamModalOpen(true)}
-              className="p-2 bg-tv-dark-border hover:bg-tv-dark-text/10 rounded-lg transition-colors"
-              title="Parametre Ayarları"
-            >
-              <Settings className="w-5 h-5 text-tv-dark-text" />
-            </button>
-
-            <div className="ml-auto">
-              <ScanButton onClick={handleScan} loading={loading} />
-            </div>
-          </div>
-
-          {/* Signal Type Chips */}
-          <div className="flex items-center gap-2">
-            <SignalTypeChips
-              signalTypes={visibleSignalTypes}
-              activeTypes={activeSignalTypes}
-              onToggle={handleToggleSignalType}
-              onRemove={handleRemoveSignalType}
-            />
-            
-            {visibleSignalTypes.length < allSignalTypes.length && (
+        <div className="relative bg-tv-dark-card border border-tv-dark-border/50 rounded-2xl p-6 mb-6 shadow-2xl overflow-visible z-10">
+          {/* Subtle background gradient */}
+          <div className="absolute inset-0 bg-gradient-card opacity-30 rounded-2xl"></div>
+          
+          <div className="relative flex flex-col gap-6 z-20">
+            {/* Top Row: Selectors and Action */}
+            <div className="flex flex-wrap items-center gap-3">
+              <WatchlistSelector value={watchlist} onChange={setWatchlist} />
+              <StrategySelector value={strategy} onChange={setStrategy} />
+              
               <button
-                onClick={handleAddSignalType}
-                className="p-1.5 bg-tv-dark-border hover:bg-tv-dark-text/10 rounded-lg transition-colors"
-                title="Filtre Ekle"
+                onClick={() => setParamModalOpen(true)}
+                className="relative p-3 bg-tv-dark-surface hover:bg-tv-dark-surface/80 border-2 border-tv-dark-border hover:border-tv-dark-primary rounded-xl transition-all group shadow-md hover:shadow-glow-sm"
+                title="Parametre Ayarları"
               >
-                <Plus className="w-4 h-4 text-tv-dark-text" />
+                <Settings className="w-5 h-5 text-tv-dark-textMuted group-hover:text-tv-dark-primary transition-all group-hover:rotate-90 duration-300" />
               </button>
-            )}
+
+              <div className="ml-auto">
+                <ScanButton onClick={handleScan} loading={loading} />
+              </div>
+            </div>
+
+            {/* Bottom Row: Signal Type Filters */}
+            <div className="border-t border-tv-dark-border/30 pt-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-5 rounded-full bg-gradient-primary"></div>
+                  <h3 className="text-sm font-bold text-tv-dark-text uppercase tracking-wide">Sinyal Türü Filtreleri</h3>
+                </div>
+                {activeSignalTypes.length > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gradient-primary/10 border border-tv-dark-primary/30 rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-tv-dark-primary animate-pulse"></div>
+                    <span className="text-xs text-tv-dark-primary font-bold">
+                      {activeSignalTypes.length} Aktif Filtre
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <SignalTypeChips
+                  signalTypes={visibleSignalTypes}
+                  activeTypes={activeSignalTypes}
+                  onToggle={handleToggleSignalType}
+                  onRemove={handleRemoveSignalType}
+                />
+                
+                {visibleSignalTypes.length < allSignalTypes.length && (
+                  <button
+                    onClick={handleAddSignalType}
+                    className="p-2.5 bg-tv-dark-surface hover:bg-gradient-primary/10 border-2 border-dashed border-tv-dark-border hover:border-tv-dark-primary rounded-xl transition-all group"
+                    title="Yeni Filtre Ekle"
+                  >
+                    <Plus className="w-4 h-4 text-tv-dark-textMuted group-hover:text-tv-dark-primary transition-all group-hover:rotate-90 duration-300" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

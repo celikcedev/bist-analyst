@@ -57,13 +57,14 @@ class XTUMYV27Strategy(BaseStrategy):
     """
     XTUMY V27 Trading Strategy
     
-    Identifies 6 types of buy signals:
+    Identifies 7 types of signals:
     1. KURUMSAL DİP - Silent accumulation in bear structure
     2. TREND BAŞLANGIÇ - EMA50 breakout
     3. PULLBACK AL - EMA50 retest after trend establishment
     4. DİP AL - Fibonacci bottom (0.000 level)
     5. ALTIN KIRILIM - Golden ratio (0.618) breakout
     6. ZİRVE KIRILIMI - ATH resistance breakout
+    7. DİRENÇ REDDİ - Resistance rejection warning
     """
     
     def calculate_signals(self, df: pd.DataFrame) -> List[SignalResult]:
@@ -117,6 +118,11 @@ class XTUMYV27Strategy(BaseStrategy):
         
         # Signal 6: ZİRVE KIRILIMI
         signal = self._check_zirve_kirilimi(df, curr, prev)
+        if signal:
+            signals.append(signal)
+        
+        # Signal 7: DİRENÇ REDDİ
+        signal = self._check_direnc_reddi(df, curr, prev)
         if signal:
             signals.append(signal)
         
@@ -360,16 +366,25 @@ class XTUMYV27Strategy(BaseStrategy):
         # Crossover check
         breakGold = (prev['close'] <= prev['wall_gold']) and (curr['close'] > curr['wall_gold'])
         
-        # Cooldown check
+        # Cooldown check - only count VALID signals (with all conditions met)
         cooldown_ok = True
         if len(df) >= params.cooldown:
             for i in range(1, params.cooldown + 1):
                 past_bar = df.iloc[-1 - i]
                 past_prev = df.iloc[-2 - i] if len(df) > (1 + i) else None
-                if past_prev is not None:
-                    if (past_prev['close'] <= past_prev['wall_gold']) and (past_bar['close'] > past_bar['wall_gold']):
-                        cooldown_ok = False
-                        break
+                if past_prev is not None and not pd.isna(past_bar['wall_gold']) and not pd.isna(past_prev['wall_gold']):
+                    # Check if there was a VALID (complete) signal in cooldown period
+                    past_crossover = (past_prev['close'] <= past_prev['wall_gold']) and (past_bar['close'] > past_bar['wall_gold'])
+                    if past_crossover:
+                        # Check if ALL other conditions were also met (volume, bullish, DI+)
+                        past_valid = (
+                            (past_bar['volume'] > (past_bar['avgVol'] * params.volMult)) and
+                            (past_bar['close'] > past_bar['open']) and
+                            (past_bar['diplus'] > past_bar['diminus'])
+                        )
+                        if past_valid:
+                            cooldown_ok = False
+                            break
         
         isGoldBreakValid = (breakGold and 
                            (curr['volume'] > (curr['avgVol'] * params.volMult)) and 
@@ -399,16 +414,25 @@ class XTUMYV27Strategy(BaseStrategy):
         # Crossover check
         breakTop = (prev['close'] <= prev['wall_top']) and (curr['close'] > curr['wall_top'])
         
-        # Cooldown check
+        # Cooldown check - only count VALID signals (with all conditions met)
         cooldown_ok = True
         if len(df) >= params.cooldown:
             for i in range(1, params.cooldown + 1):
                 past_bar = df.iloc[-1 - i]
                 past_prev = df.iloc[-2 - i] if len(df) > (1 + i) else None
-                if past_prev is not None:
-                    if (past_prev['close'] <= past_prev['wall_top']) and (past_bar['close'] > past_bar['wall_top']):
-                        cooldown_ok = False
-                        break
+                if past_prev is not None and not pd.isna(past_bar['wall_top']) and not pd.isna(past_prev['wall_top']):
+                    # Check if there was a VALID (complete) signal in cooldown period
+                    past_crossover = (past_prev['close'] <= past_prev['wall_top']) and (past_bar['close'] > past_bar['wall_top'])
+                    if past_crossover:
+                        # Check if ALL other conditions were also met (volume, bullish, DI+)
+                        past_valid = (
+                            (past_bar['volume'] > (past_bar['avgVol'] * params.volMult)) and
+                            (past_bar['close'] > past_bar['open']) and
+                            (past_bar['diplus'] > past_bar['diminus'])
+                        )
+                        if past_valid:
+                            cooldown_ok = False
+                            break
         
         isResBreakValid = (breakTop and 
                           (curr['volume'] > (curr['avgVol'] * params.volMult)) and 
@@ -425,6 +449,34 @@ class XTUMYV27Strategy(BaseStrategy):
                 rsi=round(float(curr['rsi']), 2),
                 adx=round(float(curr['adx']), 2),
                 metadata={'trend': f'Direnç Aşıldı ({curr["wall_top"]:.2f})'}
+            )
+        return None
+    
+    def _check_direnc_reddi(self, df: pd.DataFrame, curr: pd.Series, prev: pd.Series) -> SignalResult:
+        """Check for DİRENÇ REDDİ (Resistance Rejection) warning signal.
+        
+        IMPORTANT: Pine Script alertcondition uses ONLY isRejection, not the full warningSignal.
+        TradingView Screener follows alertcondition, so we only check isRejection here.
+        
+        Pine Script alertcondition:
+        alertcondition(isRejection, title="XTUMY V27: DİRENÇ REDDİ", message="{{ticker}} - Satış Baskısı!")
+        """
+        if pd.isna(curr['wall_top']):
+            return None
+        
+        # Pine Script alertcondition uses ONLY isRejection
+        # isRejection = (high >= wall_top) and (close < wall_top)
+        isRejection = (curr['high'] >= curr['wall_top']) and (curr['close'] < curr['wall_top'])
+        
+        if isRejection:
+            return SignalResult(
+                symbol=curr['symbol'],
+                signal_type='DİRENÇ REDDİ',
+                signal_date=str(curr['date'])[:10],
+                price=float(curr['close']),
+                rsi=round(float(curr['rsi']), 2),
+                adx=round(float(curr['adx']), 2),
+                metadata={'warning': f'Direnç Reddi ({curr["wall_top"]:.2f})'}
             )
         return None
     
