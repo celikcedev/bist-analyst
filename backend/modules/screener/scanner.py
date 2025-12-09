@@ -36,13 +36,19 @@ class ScanEngine:
         self.user_id = user_id
         self.strategy_class = StrategyRegistry.get_strategy(strategy_name)
         
-    def run_scan(self, save_to_db: bool = True, symbols: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def run_scan(
+        self, 
+        save_to_db: bool = True, 
+        symbols: Optional[List[str]] = None,
+        signal_types: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Run scan on market data.
         
         Args:
             save_to_db: Whether to save results to database
             symbols: Optional list of symbols to scan (None = scan all)
+            signal_types: Optional list of signal types to filter (None = all types)
             
         Returns:
             List of signal dictionaries
@@ -69,6 +75,11 @@ class ScanEngine:
             except Exception as e:
                 print(f"⚠️  Error scanning {symbol}: {e}")
                 continue
+        
+        # Filter by signal types if specified
+        if signal_types:
+            all_signals = [s for s in all_signals if s.signal_type in signal_types]
+            print(f"🔍 Filtered to {len(all_signals)} signals matching types: {signal_types}")
         
         # Save to database if requested
         if save_to_db and all_signals:

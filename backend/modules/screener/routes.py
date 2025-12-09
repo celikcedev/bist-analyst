@@ -234,7 +234,8 @@ def run_scan():
             "strategy_name": "XTUMYV27Strategy",
             "user_id": 1,
             "save_to_db": true,
-            "symbols": ["THYAO", "ASELS"]  // optional
+            "symbols": ["THYAO", "ASELS"],  // optional
+            "signal_types": ["PULLBACK_AL", "DIP_AL"]  // optional - filter by signal types
         }
     
     Returns:
@@ -251,6 +252,7 @@ def run_scan():
         user_id = data.get('user_id', 1)
         save_to_db = data.get('save_to_db', True)
         symbols = data.get('symbols')  # Optional
+        signal_types = data.get('signal_types')  # Optional - NEW!
         
         if not strategy_name:
             return jsonify({'error': 'strategy_name is required'}), 400
@@ -258,8 +260,12 @@ def run_scan():
         # Create scan engine
         scan_engine = ScanEngine(strategy_name, user_id)
         
-        # Run scan
-        signals = scan_engine.run_scan(save_to_db=save_to_db, symbols=symbols)
+        # Run scan with signal type filter
+        signals = scan_engine.run_scan(
+            save_to_db=save_to_db, 
+            symbols=symbols,
+            signal_types=signal_types
+        )
         
         return jsonify({
             'message': 'Scan completed',
