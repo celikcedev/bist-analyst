@@ -75,3 +75,8 @@ USER_GUIDE.md
 
 # Sprint 4 test docs (local only)
 SPRINT4_TESTING.md
+
+# Debug and temporary scripts
+debug_*.py
+quick_fix_*.py
+check_ticker_changes.py
