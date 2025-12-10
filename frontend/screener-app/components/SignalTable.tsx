@@ -1,7 +1,7 @@
 'use client';
 
-import { Signal } from '@/lib/api';
-import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, Activity } from 'lucide-react';
+import { Signal, exportSignalsToCSV } from '@/lib/api';
+import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, Activity, Download } from 'lucide-react';
 import { useState } from 'react';
 
 interface SignalTableProps {
@@ -132,8 +132,27 @@ export default function SignalTable({ signals, loading }: SignalTableProps) {
     </button>
   );
 
+  const handleExportCSV = () => {
+    const filename = `bist-signals-${new Date().toISOString().split('T')[0]}.csv`;
+    exportSignalsToCSV(signals, filename);
+  };
+
   return (
     <div className="bg-tv-dark-card rounded-2xl border border-tv-dark-border/50 overflow-hidden shadow-xl">
+      {/* Actions Bar */}
+      <div className="px-6 py-3 border-b border-tv-dark-border/50 bg-gradient-card/30 flex items-center justify-between">
+        <div className="text-tv-dark-text font-semibold">
+          {signals.length} Sinyal
+        </div>
+        <button
+          onClick={handleExportCSV}
+          className="flex items-center gap-2 px-3 py-1.5 bg-tv-dark-primary hover:bg-tv-dark-primary/80 text-white rounded-lg transition-colors text-sm font-medium"
+        >
+          <Download className="w-4 h-4" />
+          <span>CSV İndir</span>
+        </button>
+      </div>
+      
       {/* Table Header */}
       <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-tv-dark-border/50 bg-gradient-card/30">
         <div className="col-span-3">
