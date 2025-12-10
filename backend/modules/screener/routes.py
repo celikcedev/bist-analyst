@@ -3,13 +3,33 @@ REST API routes for screener module.
 """
 from flask import Blueprint, jsonify, request
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, List
+from pydantic import BaseModel, Field, ValidationError
 import traceback
 
 from backend.core.database import get_db_session
 from backend.modules.screener.models import Strategy, StrategyParameter, SignalHistory
 from backend.modules.screener.scanner import ScanEngine
 from backend.modules.screener.strategies.registry import StrategyRegistry
+
+
+# ============================================================================
+# REQUEST/RESPONSE MODELS (Pydantic)
+# ============================================================================
+
+class ScanRequest(BaseModel):
+    """Request model for POST /api/screener/scan"""
+    strategy_name: str = Field(..., description="Name of registered strategy (e.g., XTUMYV27Strategy)")
+    user_id: int = Field(default=1, ge=1, description="User ID")
+    save_to_db: bool = Field(default=True, description="Whether to save signals to database")
+    symbols: Optional[List[str]] = Field(default=None, description="Optional list of symbols to scan")
+    signal_types: Optional[List[str]] = Field(default=None, description="Optional list of signal types to filter")
+
+
+class UpdateParametersRequest(BaseModel):
+    """Request model for PUT /api/screener/strategies/:name/parameters"""
+    user_id: int = Field(default=1, ge=1, description="User ID")
+    parameters: dict = Field(..., description="Strategy parameters to update")
 
 # Create blueprint
 screener_bp = Blueprint('screener', __name__, url_prefix='/api/screener')
@@ -157,41 +177,55 @@ def update_strategy_parameters(strategy_name: str):
         {
             "message": "Parameters updated successfully",
             "strategy_id": 1,
+            "strategy_name": "XTUMYV27Strategy",
             "updated_count": 12
         }
     """
     try:
         data = request.get_json()
-        user_id = data.get('user_id', 1)
-        parameters = data.get('parameters', {})
         
-        if not parameters:
-            return jsonify({'error': 'No parameters provided'}), 400
+        # Validate request with Pydantic
+        try:
+            update_request = UpdateParametersRequest(**data)
+        except ValidationError as e:
+            return jsonify({
+                'error': 'Invalid request data',
+                'details': e.errors()
+            }), 400
         
         with get_db_session() as session:
             # Get strategy
             strategy = session.query(Strategy).filter(Strategy.name == strategy_name).first()
             
             if not strategy:
-                return jsonify({'error': f'Strategy {strategy_name} not found'}), 404
+                return jsonify({
+                    'error': f'Strategy "{strategy_name}" not found',
+                    'available_strategies': list(StrategyRegistry._strategies.keys())
+                }), 404
             
             strategy_id = strategy.id
             
-            # Validate parameters using Pydantic
-            strategy_class = StrategyRegistry.get_strategy(strategy.name)
-            params_class = strategy_class.get_default_parameters().__class__
-            
+            # Validate parameters using strategy's Pydantic model
             try:
-                validated_params = params_class(**parameters)
-            except Exception as e:
-                return jsonify({'error': f'Invalid parameters: {str(e)}'}), 400
+                strategy_class = StrategyRegistry.get_strategy(strategy.name)
+                params_class = strategy_class.get_default_parameters().__class__
+                validated_params = params_class(**update_request.parameters)
+            except KeyError:
+                return jsonify({
+                    'error': f'Strategy "{strategy_name}" not found in registry'
+                }), 404
+            except ValidationError as e:
+                return jsonify({
+                    'error': 'Invalid strategy parameters',
+                    'details': e.errors()
+                }), 400
             
             # Update or create parameters
             updated_count = 0
             for param_name, param_value in validated_params.model_dump().items():
                 # Check if exists
                 existing = session.query(StrategyParameter).filter(
-                    StrategyParameter.user_id == user_id,
+                    StrategyParameter.user_id == update_request.user_id,
                     StrategyParameter.strategy_id == strategy_id,
                     StrategyParameter.parameter_name == param_name
                 ).first()
@@ -200,7 +234,7 @@ def update_strategy_parameters(strategy_name: str):
                     existing.parameter_value = param_value
                 else:
                     new_param = StrategyParameter(
-                        user_id=user_id,
+                        user_id=update_request.user_id,
                         strategy_id=strategy_id,
                         parameter_name=param_name,
                         parameter_value=param_value,
@@ -215,11 +249,17 @@ def update_strategy_parameters(strategy_name: str):
             return jsonify({
                 'message': 'Parameters updated successfully',
                 'strategy_id': strategy_id,
+                'strategy_name': strategy.name,
+                'user_id': update_request.user_id,
                 'updated_count': updated_count
             }), 200
     
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 
 @screener_bp.route('/scan', methods=['POST'])
@@ -235,7 +275,7 @@ def run_scan():
             "user_id": 1,
             "save_to_db": true,
             "symbols": ["THYAO", "ASELS"],  // optional
-            "signal_types": ["PULLBACK_AL", "DIP_AL"]  // optional - filter by signal types
+            "signal_types": ["PULLBACK AL", "DİP AL"]  // optional - filter by signal types
         }
     
     Returns:
@@ -248,36 +288,46 @@ def run_scan():
     """
     try:
         data = request.get_json()
-        strategy_name = data.get('strategy_name')
-        user_id = data.get('user_id', 1)
-        save_to_db = data.get('save_to_db', True)
-        symbols = data.get('symbols')  # Optional
-        signal_types = data.get('signal_types')  # Optional - NEW!
         
-        if not strategy_name:
-            return jsonify({'error': 'strategy_name is required'}), 400
+        # Validate request with Pydantic
+        try:
+            scan_request = ScanRequest(**data)
+        except ValidationError as e:
+            return jsonify({
+                'error': 'Invalid request data',
+                'details': e.errors()
+            }), 400
         
         # Create scan engine
-        scan_engine = ScanEngine(strategy_name, user_id)
+        try:
+            scan_engine = ScanEngine(scan_request.strategy_name, scan_request.user_id)
+        except KeyError:
+            return jsonify({
+                'error': f'Strategy "{scan_request.strategy_name}" not found',
+                'available_strategies': list(StrategyRegistry._strategies.keys())
+            }), 404
         
         # Run scan with signal type filter
         signals = scan_engine.run_scan(
-            save_to_db=save_to_db, 
-            symbols=symbols,
-            signal_types=signal_types
+            save_to_db=scan_request.save_to_db, 
+            symbols=scan_request.symbols,
+            signal_types=scan_request.signal_types
         )
         
         return jsonify({
             'message': 'Scan completed',
-            'strategy': strategy_name,
+            'strategy': scan_request.strategy_name,
+            'user_id': scan_request.user_id,
             'signals_found': len(signals),
             'signals': signals
         }), 200
     
-    except KeyError as e:
-        return jsonify({'error': f'Strategy not found: {str(e)}'}), 404
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 
 @screener_bp.route('/signals', methods=['GET'])
