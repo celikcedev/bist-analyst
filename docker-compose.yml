@@ -1,0 +1,116 @@
+# ============================================================================
+# BIST Analyst - Docker Compose (Development)
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: bist-analyst-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bist_analyst}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bist-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bist-analyst-backend
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-bist_analyst}
+      - PORT=5001
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend:/app
+      - backend_logs:/app/logs
+    ports:
+      - "${BACKEND_PORT:-5001}:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - bist-network
+
+  # Main App (Landing Page)
+  main-app:
+    build:
+      context: ./frontend/main-app
+      dockerfile: Dockerfile
+    container_name: bist-analyst-main-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-5001}
+      - PORT=3000
+    ports:
+      - "${MAIN_APP_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - bist-network
+
+  # Screener App
+  screener-app:
+    build:
+      context: ./frontend/screener-app
+      dockerfile: Dockerfile
+    container_name: bist-analyst-screener-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-5001}
+      - PORT=3001
+    ports:
+      - "${SCREENER_APP_PORT:-3001}:3001"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - bist-network
+
+networks:
+  bist-network:
+    driver: bridge
+    name: bist-analyst-network
+
+volumes:
+  postgres_data:
+    name: bist-analyst-postgres-data
+  backend_logs:
+    name: bist-analyst-backend-logs
