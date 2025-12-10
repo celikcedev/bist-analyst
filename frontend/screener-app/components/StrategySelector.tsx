@@ -2,7 +2,7 @@
 
 import { ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Strategy, getStrategies } from '@/lib/api';
+import { api, type Strategy } from '@/lib/api';
 
 interface StrategySelectorProps {
   value: string;
@@ -20,8 +20,8 @@ export default function StrategySelector({ value, onChange }: StrategySelectorPr
 
   const loadStrategies = async () => {
     try {
-      const data = await getStrategies();
-      setStrategies(data.filter(s => s.is_active));
+      const data = await api.getStrategies();
+      setStrategies(data.strategies.filter(s => s.is_active));
       setLoading(false);
     } catch (error) {
       console.error('Failed to load strategies:', error);

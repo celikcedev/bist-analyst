@@ -2,7 +2,14 @@
 
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { StrategyParameter, getStrategyParameters, updateStrategyParameters } from '@/lib/api';
+// Deprecated: Use Strategy Management page instead (/strategies)
+// import { api, type StrategyParameters } from '@/lib/api';
+
+interface StrategyParameter {
+  parameter_name: string;
+  parameter_value: any;
+  parameter_type: string;
+}
 
 interface ParameterModalProps {
   isOpen: boolean;
@@ -31,15 +38,10 @@ export default function ParameterModal({
   const loadParameters = async () => {
     setLoading(true);
     try {
-      const data = await getStrategyParameters(strategyName);
-      setParameters(data);
-      
-      // Initialize local values
-      const values: Record<string, any> = {};
-      data.forEach(param => {
-        values[param.parameter_name] = param.parameter_value;
-      });
-      setLocalValues(values);
+      // Deprecated: Redirect to /strategies page
+      console.warn('ParameterModal is deprecated. Use /strategies page instead.');
+      setParameters([]);
+      setLocalValues({});
     } catch (error) {
       console.error('Failed to load parameters:', error);
     } finally {
@@ -50,7 +52,8 @@ export default function ParameterModal({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateStrategyParameters(strategyName, localValues);
+      // Deprecated: Use /strategies page
+      console.warn('ParameterModal save is deprecated. Use /strategies page instead.');
       onClose();
     } catch (error) {
       console.error('Failed to save parameters:', error);

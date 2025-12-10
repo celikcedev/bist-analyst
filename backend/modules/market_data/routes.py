@@ -175,3 +175,35 @@ def get_ticker_data(symbol: str):
     
     except Exception as e:
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+@market_data_bp.route('/<symbol>/ohlcv', methods=['GET'])
+def get_ohlcv(symbol: str):
+    """
+    Get OHLCV data for charting (alias for /tickers/:symbol/data).
+    Optimized for chart libraries like lightweight-charts.
+    
+    GET /api/market-data/:symbol/ohlcv?days=90
+    
+    Query params:
+        days: Number of days to fetch (default: 90, max: 365)
+    
+    Returns:
+        {
+            "symbol": "THYAO",
+            "data": [
+                {
+                    "date": "2025-12-07",
+                    "open": 188.0,
+                    "high": 192.5,
+                    "low": 187.0,
+                    "close": 191.2,
+                    "volume": 1500000
+                },
+                ...
+            ],
+            "count": 30
+        }
+    """
+    # Call the existing get_ticker_data function
+    return get_ticker_data(symbol)

@@ -8,7 +8,7 @@ import SignalTypeChips from '@/components/SignalTypeChips';
 import ParameterModal from '@/components/ParameterModal';
 import SignalTable from '@/components/SignalTable';
 import ScanButton from '@/components/ScanButton';
-import { Signal, runScan, Strategy, getStrategies } from '@/lib/api';
+import { api, type Signal, type Strategy } from '@/lib/api';
 
 export default function ScreenerPage() {
   const [watchlist, setWatchlist] = useState('BIST TUM');
@@ -38,8 +38,8 @@ export default function ScreenerPage() {
 
   const loadStrategies = async () => {
     try {
-      const data = await getStrategies();
-      setStrategies(data.filter(s => s.is_active));
+      const data = await api.getStrategies();
+      setStrategies(data.strategies.filter(s => s.is_active));
     } catch (error) {
       console.error('Failed to load strategies:', error);
     }
@@ -48,11 +48,13 @@ export default function ScreenerPage() {
   const handleScan = async () => {
     setLoading(true);
     try {
-      const result = await runScan({
+      const result = await api.runScan({
         strategy_name: strategy,
+        user_id: 1,
+        save_to_db: false,
         signal_types: activeSignalTypes.length > 0 ? activeSignalTypes : undefined,
       });
-      setSignals(result.signals);
+      setSignals(result.signals || []);
     } catch (error) {
       console.error('Scan failed:', error);
       alert('Tarama başarısız oldu. Lütfen tekrar deneyin.');
