@@ -1,8 +1,9 @@
 'use client';
 
 import { Signal, exportSignalsToCSV } from '@/lib/api';
-import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, Activity, Download } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, Activity, Download, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
+import ChartModal from './ChartModal';
 
 interface SignalTableProps {
   signals: Signal[];
@@ -15,6 +16,8 @@ type SortDirection = 'asc' | 'desc';
 export default function SignalTable({ signals, loading }: SignalTableProps) {
   const [sortField, setSortField] = useState<SortField>('signal_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [chartModalOpen, setChartModalOpen] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState<string>('');
 
   if (loading) {
     return (
@@ -192,12 +195,23 @@ export default function SignalTable({ signals, loading }: SignalTableProps) {
                   <span className="text-sm font-bold text-white">{signal.symbol.charAt(0)}</span>
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-success rounded-full border-2 border-tv-dark-bg"></div>
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="text-sm font-bold text-tv-dark-text group-hover:text-tv-dark-primary transition-colors">
                     {signal.symbol}
                   </div>
                   <div className="text-xs text-tv-dark-textMuted font-medium">BIST</div>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSymbol(signal.symbol);
+                    setChartModalOpen(true);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-2 hover:bg-tv-dark-primary/20 rounded-lg transition-all"
+                  title="Grafiği Görüntüle"
+                >
+                  <BarChart3 className="w-4 h-4 text-tv-dark-primary" />
+                </button>
               </div>
 
               {/* Signal Type */}
@@ -273,6 +287,13 @@ export default function SignalTable({ signals, loading }: SignalTableProps) {
           </div>
         </div>
       </div>
+
+      {/* Chart Modal */}
+      <ChartModal
+        isOpen={chartModalOpen}
+        onClose={() => setChartModalOpen(false)}
+        symbol={selectedSymbol}
+      />
     </div>
   );
 }

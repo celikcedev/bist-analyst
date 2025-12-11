@@ -8,6 +8,7 @@ import SignalTypeChips from '@/components/SignalTypeChips';
 import ParameterModal from '@/components/ParameterModal';
 import SignalTable from '@/components/SignalTable';
 import ScanButton from '@/components/ScanButton';
+import AdvancedFilters, { type FilterValues } from '@/components/AdvancedFilters';
 import { api, type Signal, type Strategy } from '@/lib/api';
 
 export default function ScreenerPage() {
@@ -29,8 +30,17 @@ export default function ScreenerPage() {
   const [visibleSignalTypes, setVisibleSignalTypes] = useState<string[]>(allSignalTypes.slice(0, 4));
   const [activeSignalTypes, setActiveSignalTypes] = useState<string[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [filteredSignals, setFilteredSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(false);
   const [paramModalOpen, setParamModalOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterValues>({
+    rsiMin: 0,
+    rsiMax: 100,
+    adxMin: 0,
+    priceMin: 0,
+    priceMax: 10000,
+    volumeMin: 0,
+  });
 
   useEffect(() => {
     loadStrategies();
@@ -45,6 +55,29 @@ export default function ScreenerPage() {
     }
   };
 
+  const applyFilters = (signalsToFilter: Signal[], filters: FilterValues) => {
+    const filtered = signalsToFilter.filter(signal => {
+      const rsi = signal.rsi || 0;
+      const adx = signal.adx || 0;
+      const price = signal.price || 0;
+      
+      return (
+        rsi >= filters.rsiMin &&
+        rsi <= filters.rsiMax &&
+        adx >= filters.adxMin &&
+        price >= filters.priceMin &&
+        price <= filters.priceMax
+      );
+    });
+    
+    setFilteredSignals(filtered);
+  };
+
+  const handleFilterChange = (filters: FilterValues) => {
+    setAdvancedFilters(filters);
+    applyFilters(signals, filters);
+  };
+
   const handleScan = async () => {
     setLoading(true);
     try {
@@ -54,7 +87,9 @@ export default function ScreenerPage() {
         save_to_db: false,
         signal_types: activeSignalTypes.length > 0 ? activeSignalTypes : undefined,
       });
-      setSignals(result.signals || []);
+      const resultSignals = result.signals || [];
+      setSignals(resultSignals);
+      applyFilters(resultSignals, advancedFilters);
     } catch (error) {
       console.error('Scan failed:', error);
       alert('Tarama başarısız oldu. Lütfen tekrar deneyin.');
@@ -189,7 +224,14 @@ export default function ScreenerPage() {
         </div>
 
         {/* Results */}
-        <SignalTable signals={signals} loading={loading} />
+        {/* Advanced Filters */}
+        {signals.length > 0 && (
+          <div className="mb-6">
+            <AdvancedFilters onFilterChange={handleFilterChange} />
+          </div>
+        )}
+
+        <SignalTable signals={filteredSignals.length > 0 ? filteredSignals : signals} loading={loading} />
       </main>
 
       {/* Parameter Modal */}
