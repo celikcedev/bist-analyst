@@ -54,11 +54,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
   return (
     <div className="bg-tv-dark-card rounded-2xl border border-tv-dark-border/50 overflow-hidden shadow-lg">
       {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-tv-dark-border/30 transition-colors"
-      >
-        <div className="flex items-center gap-3">
+      <div className="w-full px-6 py-4 flex items-center justify-between">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-3 flex-1 hover:opacity-80 transition-opacity"
+        >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
             <Filter className="w-5 h-5 text-white" />
           </div>
@@ -68,27 +68,29 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
               {hasActiveFilters() ? 'Aktif filtreler var' : 'Sinyalleri detaylı filtrele'}
             </p>
           </div>
-        </div>
+        </button>
         
         <div className="flex items-center gap-3">
           {hasActiveFilters() && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                resetFilters();
-              }}
+              onClick={resetFilters}
               className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
             >
               Sıfırla
             </button>
           )}
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-tv-dark-textMuted" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-tv-dark-textMuted" />
-          )}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-2 hover:bg-tv-dark-border/30 rounded-lg transition-colors"
+          >
+            {isExpanded ? (
+              <ChevronUp className="w-5 h-5 text-tv-dark-textMuted" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-tv-dark-textMuted" />
+            )}
+          </button>
         </div>
-      </button>
+      </div>
 
       {/* Filter Content */}
       {isExpanded && (
@@ -106,7 +108,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                     min="0"
                     max="100"
                     value={filters.rsiMin}
-                    onChange={(e) => handleFilterChange('rsiMin', Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Number(e.target.value);
+                      handleFilterChange('rsiMin', val);
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3 py-2 bg-tv-dark-surface border border-tv-dark-border rounded-lg text-tv-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-tv-dark-primary"
                     placeholder="Min"
                   />
@@ -119,7 +125,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                     min="0"
                     max="100"
                     value={filters.rsiMax}
-                    onChange={(e) => handleFilterChange('rsiMax', Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 100 : Number(e.target.value);
+                      handleFilterChange('rsiMax', val);
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3 py-2 bg-tv-dark-surface border border-tv-dark-border rounded-lg text-tv-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-tv-dark-primary"
                     placeholder="Max"
                   />
@@ -142,7 +152,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                 min="0"
                 max="100"
                 value={filters.adxMin}
-                onChange={(e) => handleFilterChange('adxMin', Number(e.target.value))}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                  handleFilterChange('adxMin', val);
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-full px-3 py-2 bg-tv-dark-surface border border-tv-dark-border rounded-lg text-tv-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-tv-dark-primary"
                 placeholder="Minimum ADX"
               />
@@ -162,7 +176,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                     type="number"
                     min="0"
                     value={filters.priceMin}
-                    onChange={(e) => handleFilterChange('priceMin', Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Number(e.target.value);
+                      handleFilterChange('priceMin', val);
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3 py-2 bg-tv-dark-surface border border-tv-dark-border rounded-lg text-tv-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-tv-dark-primary"
                     placeholder="Min"
                   />
@@ -174,7 +192,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                     type="number"
                     min="0"
                     value={filters.priceMax}
-                    onChange={(e) => handleFilterChange('priceMax', Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 10000 : Number(e.target.value);
+                      handleFilterChange('priceMax', val);
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3 py-2 bg-tv-dark-surface border border-tv-dark-border rounded-lg text-tv-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-tv-dark-primary"
                     placeholder="Max"
                   />
@@ -192,7 +214,11 @@ export default function AdvancedFilters({ onFilterChange }: AdvancedFiltersProps
                 type="number"
                 min="0"
                 value={filters.volumeMin}
-                onChange={(e) => handleFilterChange('volumeMin', Number(e.target.value))}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                  handleFilterChange('volumeMin', val);
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-full px-3 py-2 bg-tv-dark-surface border border-tv-dark-border rounded-lg text-tv-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-tv-dark-primary"
                 placeholder="Minimum hacim"
               />
