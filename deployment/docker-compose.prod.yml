@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: bist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bist_analyst}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - bist-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bist_analyst}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Flask)
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: bist-backend
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - PORT=5001
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bist_analyst}
+      - CORS_ORIGINS=https://hisseleme.com,https://screener.hisseleme.com
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_IDS=${TELEGRAM_CHAT_IDS:-}
+    ports:
+      - "5001:5001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - bist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Main Landing Page (Next.js)
+  main-app:
+    build:
+      context: ../frontend/main-app
+      dockerfile: Dockerfile
+    container_name: bist-main-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.hisseleme.com
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - bist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Screener App (Next.js)
+  screener-app:
+    build:
+      context: ../frontend/screener-app
+      dockerfile: Dockerfile
+    container_name: bist-screener-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.hisseleme.com
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    networks:
+      - bist-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  bist-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+
