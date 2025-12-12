@@ -148,13 +148,29 @@ export default function ScreenerPage() {
             </div>
           </div>
           
-          <a
-            href="http://localhost:3000"
-            className="text-sm text-tv-dark-textMuted hover:text-tv-dark-primary transition-all font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tv-dark-card"
-          >
-            <span>←</span>
-            <span>Ana Sayfa</span>
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href="/performance"
+              className="text-sm text-tv-dark-textMuted hover:text-tv-dark-primary transition-all font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tv-dark-card border border-transparent hover:border-tv-dark-primary/30"
+            >
+              <span>📊</span>
+              <span>Performans</span>
+            </a>
+            <a
+              href="/strategies"
+              className="text-sm text-tv-dark-textMuted hover:text-tv-dark-primary transition-all font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tv-dark-card border border-transparent hover:border-tv-dark-primary/30"
+            >
+              <span>⚙️</span>
+              <span>Stratejiler</span>
+            </a>
+            <a
+              href="http://localhost:3000"
+              className="text-sm text-tv-dark-textMuted hover:text-tv-dark-primary transition-all font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tv-dark-card"
+            >
+              <span>←</span>
+              <span>Ana Sayfa</span>
+            </a>
+          </div>
         </div>
       </header>
 

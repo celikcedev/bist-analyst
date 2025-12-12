@@ -2,13 +2,14 @@
 REST API routes for screener module.
 """
 from flask import Blueprint, jsonify, request
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, List
+from sqlalchemy import text, func
 from pydantic import BaseModel, Field, ValidationError
 import traceback
 
 from backend.core.database import get_db_session
-from backend.modules.screener.models import Strategy, StrategyParameter, SignalHistory
+from backend.modules.screener.models import Strategy, StrategyParameter, SignalHistory, SignalPerformance
 from backend.modules.screener.scanner import ScanEngine
 from backend.modules.screener.strategies.registry import StrategyRegistry
 
@@ -470,6 +471,402 @@ def get_signal(signal_id: int):
             }
             
             return jsonify(result), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+# ============================================================================
+# PERFORMANCE TRACKING ENDPOINTS
+# ============================================================================
+
+@screener_bp.route('/performance/summary', methods=['GET'])
+def get_performance_summary():
+    """
+    Get performance summary for all signal types.
+    
+    GET /api/screener/performance/summary?days=30&user_id=1
+    
+    Query params:
+        days: Number of days to look back (default: 30)
+        user_id: User ID (default: 1)
+    
+    Returns:
+        {
+            "period_days": 30,
+            "generated_at": "2025-12-12T10:00:00",
+            "summary": {
+                "total_signals": 150,
+                "tracked_signals": 120,
+                "overall_win_rate_7d": 65.5,
+                "overall_avg_gain_7d": 2.35
+            },
+            "by_signal_type": [...]
+        }
+    """
+    try:
+        days = request.args.get('days', 30, type=int)
+        user_id = request.args.get('user_id', 1, type=int)
+        cutoff_date = date.today() - timedelta(days=days)
+        
+        with get_db_session() as session:
+            # Query performance by signal type
+            query = text("""
+                SELECT 
+                    sh.signal_type,
+                    COUNT(DISTINCT sh.id) as total_signals,
+                    COUNT(sp.gain_1d) as tracked_1d,
+                    COUNT(sp.gain_3d) as tracked_3d,
+                    COUNT(sp.gain_7d) as tracked_7d,
+                    AVG(sp.gain_1d) as avg_gain_1d,
+                    AVG(sp.gain_3d) as avg_gain_3d,
+                    AVG(sp.gain_7d) as avg_gain_7d,
+                    SUM(CASE WHEN sp.gain_1d > 0 THEN 1 ELSE 0 END) as wins_1d,
+                    SUM(CASE WHEN sp.gain_3d > 0 THEN 1 ELSE 0 END) as wins_3d,
+                    SUM(CASE WHEN sp.gain_7d > 0 THEN 1 ELSE 0 END) as wins_7d,
+                    MAX(sp.gain_1d) as best_1d,
+                    MAX(sp.gain_3d) as best_3d,
+                    MAX(sp.gain_7d) as best_7d,
+                    MIN(sp.gain_1d) as worst_1d,
+                    MIN(sp.gain_3d) as worst_3d,
+                    MIN(sp.gain_7d) as worst_7d
+                FROM signal_history sh
+                LEFT JOIN signal_performance sp ON sh.id = sp.signal_id
+                WHERE sh.signal_date >= :cutoff_date
+                  AND sh.user_id = :user_id
+                GROUP BY sh.signal_type
+                ORDER BY sh.signal_type
+            """)
+            
+            result = session.execute(query, {
+                'cutoff_date': cutoff_date,
+                'user_id': user_id
+            })
+            
+            by_signal_type = []
+            total_signals = 0
+            total_tracked_7d = 0
+            total_wins_7d = 0
+            sum_gain_7d = 0
+            
+            for row in result:
+                tracked_1d = row.tracked_1d or 0
+                tracked_3d = row.tracked_3d or 0
+                tracked_7d = row.tracked_7d or 0
+                wins_1d = row.wins_1d or 0
+                wins_3d = row.wins_3d or 0
+                wins_7d = row.wins_7d or 0
+                
+                total_signals += row.total_signals
+                total_tracked_7d += tracked_7d
+                total_wins_7d += wins_7d
+                if row.avg_gain_7d:
+                    sum_gain_7d += float(row.avg_gain_7d) * tracked_7d
+                
+                by_signal_type.append({
+                    'signal_type': row.signal_type,
+                    'total_signals': row.total_signals,
+                    'performance': {
+                        '1d': {
+                            'tracked': tracked_1d,
+                            'avg_gain': round(float(row.avg_gain_1d), 2) if row.avg_gain_1d else None,
+                            'win_rate': round((wins_1d / tracked_1d) * 100, 1) if tracked_1d > 0 else None,
+                            'wins': wins_1d,
+                            'best': round(float(row.best_1d), 2) if row.best_1d else None,
+                            'worst': round(float(row.worst_1d), 2) if row.worst_1d else None
+                        },
+                        '3d': {
+                            'tracked': tracked_3d,
+                            'avg_gain': round(float(row.avg_gain_3d), 2) if row.avg_gain_3d else None,
+                            'win_rate': round((wins_3d / tracked_3d) * 100, 1) if tracked_3d > 0 else None,
+                            'wins': wins_3d,
+                            'best': round(float(row.best_3d), 2) if row.best_3d else None,
+                            'worst': round(float(row.worst_3d), 2) if row.worst_3d else None
+                        },
+                        '7d': {
+                            'tracked': tracked_7d,
+                            'avg_gain': round(float(row.avg_gain_7d), 2) if row.avg_gain_7d else None,
+                            'win_rate': round((wins_7d / tracked_7d) * 100, 1) if tracked_7d > 0 else None,
+                            'wins': wins_7d,
+                            'best': round(float(row.best_7d), 2) if row.best_7d else None,
+                            'worst': round(float(row.worst_7d), 2) if row.worst_7d else None
+                        }
+                    }
+                })
+            
+            # Calculate overall stats
+            overall_win_rate = round((total_wins_7d / total_tracked_7d) * 100, 1) if total_tracked_7d > 0 else None
+            overall_avg_gain = round(sum_gain_7d / total_tracked_7d, 2) if total_tracked_7d > 0 else None
+            
+            return jsonify({
+                'period_days': days,
+                'generated_at': datetime.now().isoformat(),
+                'summary': {
+                    'total_signals': total_signals,
+                    'tracked_signals': total_tracked_7d,
+                    'overall_win_rate_7d': overall_win_rate,
+                    'overall_avg_gain_7d': overall_avg_gain
+                },
+                'by_signal_type': by_signal_type
+            }), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+@screener_bp.route('/performance/top-performers', methods=['GET'])
+def get_top_performers():
+    """
+    Get top and worst performing signals.
+    
+    GET /api/screener/performance/top-performers?days=30&limit=10&period=7d
+    
+    Query params:
+        days: Number of days to look back (default: 30)
+        limit: Number of results (default: 10)
+        period: Performance period - 1d, 3d, or 7d (default: 7d)
+        user_id: User ID (default: 1)
+    
+    Returns:
+        {
+            "period": "7d",
+            "top_gainers": [...],
+            "top_losers": [...]
+        }
+    """
+    try:
+        days = request.args.get('days', 30, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        period = request.args.get('period', '7d', type=str)
+        user_id = request.args.get('user_id', 1, type=int)
+        cutoff_date = date.today() - timedelta(days=days)
+        
+        # Validate period
+        if period not in ['1d', '3d', '7d']:
+            return jsonify({'error': 'Invalid period. Use 1d, 3d, or 7d'}), 400
+        
+        gain_column = f'gain_{period}'
+        price_column = f'price_{period}'
+        
+        with get_db_session() as session:
+            # Top gainers
+            gainers_query = text(f"""
+                SELECT 
+                    sh.id,
+                    sh.symbol,
+                    sh.signal_type,
+                    sh.signal_date,
+                    sh.price_at_signal,
+                    sp.{price_column} as price_later,
+                    sp.{gain_column} as gain
+                FROM signal_history sh
+                JOIN signal_performance sp ON sh.id = sp.signal_id
+                WHERE sh.signal_date >= :cutoff_date
+                  AND sh.user_id = :user_id
+                  AND sp.{gain_column} IS NOT NULL
+                ORDER BY sp.{gain_column} DESC
+                LIMIT :limit
+            """)
+            
+            gainers = session.execute(gainers_query, {
+                'cutoff_date': cutoff_date,
+                'user_id': user_id,
+                'limit': limit
+            })
+            
+            top_gainers = []
+            for row in gainers:
+                top_gainers.append({
+                    'id': row.id,
+                    'symbol': row.symbol,
+                    'signal_type': row.signal_type,
+                    'signal_date': str(row.signal_date),
+                    'price_at_signal': float(row.price_at_signal) if row.price_at_signal else None,
+                    'price_later': float(row.price_later) if row.price_later else None,
+                    'gain': float(row.gain) if row.gain else None
+                })
+            
+            # Top losers
+            losers_query = text(f"""
+                SELECT 
+                    sh.id,
+                    sh.symbol,
+                    sh.signal_type,
+                    sh.signal_date,
+                    sh.price_at_signal,
+                    sp.{price_column} as price_later,
+                    sp.{gain_column} as gain
+                FROM signal_history sh
+                JOIN signal_performance sp ON sh.id = sp.signal_id
+                WHERE sh.signal_date >= :cutoff_date
+                  AND sh.user_id = :user_id
+                  AND sp.{gain_column} IS NOT NULL
+                ORDER BY sp.{gain_column} ASC
+                LIMIT :limit
+            """)
+            
+            losers = session.execute(losers_query, {
+                'cutoff_date': cutoff_date,
+                'user_id': user_id,
+                'limit': limit
+            })
+            
+            top_losers = []
+            for row in losers:
+                top_losers.append({
+                    'id': row.id,
+                    'symbol': row.symbol,
+                    'signal_type': row.signal_type,
+                    'signal_date': str(row.signal_date),
+                    'price_at_signal': float(row.price_at_signal) if row.price_at_signal else None,
+                    'price_later': float(row.price_later) if row.price_later else None,
+                    'gain': float(row.gain) if row.gain else None
+                })
+            
+            return jsonify({
+                'period': period,
+                'days_back': days,
+                'top_gainers': top_gainers,
+                'top_losers': top_losers
+            }), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+@screener_bp.route('/signals/<int:signal_id>/performance', methods=['GET'])
+def get_signal_performance(signal_id: int):
+    """
+    Get performance data for a specific signal.
+    
+    GET /api/screener/signals/:id/performance
+    
+    Returns:
+        {
+            "signal": {...},
+            "performance": {...}
+        }
+    """
+    try:
+        with get_db_session() as session:
+            # Get signal
+            signal = session.query(SignalHistory).filter(
+                SignalHistory.id == signal_id
+            ).first()
+            
+            if not signal:
+                return jsonify({'error': 'Signal not found'}), 404
+            
+            # Get performance
+            performance = session.query(SignalPerformance).filter(
+                SignalPerformance.signal_id == signal_id
+            ).first()
+            
+            signal_data = {
+                'id': signal.id,
+                'symbol': signal.symbol,
+                'signal_type': signal.signal_type,
+                'signal_date': str(signal.signal_date),
+                'price_at_signal': float(signal.price_at_signal) if signal.price_at_signal else None,
+                'rsi': float(signal.rsi) if signal.rsi else None,
+                'adx': float(signal.adx) if signal.adx else None
+            }
+            
+            if performance:
+                perf_data = {
+                    'price_1d': float(performance.price_1d) if performance.price_1d else None,
+                    'price_3d': float(performance.price_3d) if performance.price_3d else None,
+                    'price_7d': float(performance.price_7d) if performance.price_7d else None,
+                    'gain_1d': float(performance.gain_1d) if performance.gain_1d else None,
+                    'gain_3d': float(performance.gain_3d) if performance.gain_3d else None,
+                    'gain_7d': float(performance.gain_7d) if performance.gain_7d else None,
+                    'updated_at': performance.updated_at.isoformat() if performance.updated_at else None
+                }
+            else:
+                perf_data = None
+            
+            return jsonify({
+                'signal': signal_data,
+                'performance': perf_data
+            }), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+@screener_bp.route('/performance/by-symbol', methods=['GET'])
+def get_performance_by_symbol():
+    """
+    Get performance statistics grouped by symbol.
+    
+    GET /api/screener/performance/by-symbol?days=30&min_signals=2
+    
+    Query params:
+        days: Number of days to look back (default: 30)
+        min_signals: Minimum signals to include (default: 1)
+        user_id: User ID (default: 1)
+        limit: Max results (default: 50)
+    
+    Returns:
+        {
+            "symbols": [...]
+        }
+    """
+    try:
+        days = request.args.get('days', 30, type=int)
+        min_signals = request.args.get('min_signals', 1, type=int)
+        user_id = request.args.get('user_id', 1, type=int)
+        limit = request.args.get('limit', 50, type=int)
+        cutoff_date = date.today() - timedelta(days=days)
+        
+        with get_db_session() as session:
+            query = text("""
+                SELECT 
+                    sh.symbol,
+                    COUNT(DISTINCT sh.id) as total_signals,
+                    ARRAY_AGG(DISTINCT sh.signal_type) as signal_types,
+                    AVG(sp.gain_7d) as avg_gain_7d,
+                    SUM(CASE WHEN sp.gain_7d > 0 THEN 1 ELSE 0 END) as wins_7d,
+                    COUNT(sp.gain_7d) as tracked_7d,
+                    MAX(sp.gain_7d) as best_gain,
+                    MIN(sp.gain_7d) as worst_gain
+                FROM signal_history sh
+                LEFT JOIN signal_performance sp ON sh.id = sp.signal_id
+                WHERE sh.signal_date >= :cutoff_date
+                  AND sh.user_id = :user_id
+                GROUP BY sh.symbol
+                HAVING COUNT(DISTINCT sh.id) >= :min_signals
+                ORDER BY AVG(sp.gain_7d) DESC NULLS LAST
+                LIMIT :limit
+            """)
+            
+            result = session.execute(query, {
+                'cutoff_date': cutoff_date,
+                'user_id': user_id,
+                'min_signals': min_signals,
+                'limit': limit
+            })
+            
+            symbols = []
+            for row in result:
+                tracked = row.tracked_7d or 0
+                wins = row.wins_7d or 0
+                
+                symbols.append({
+                    'symbol': row.symbol,
+                    'total_signals': row.total_signals,
+                    'signal_types': list(row.signal_types) if row.signal_types else [],
+                    'avg_gain_7d': round(float(row.avg_gain_7d), 2) if row.avg_gain_7d else None,
+                    'win_rate_7d': round((wins / tracked) * 100, 1) if tracked > 0 else None,
+                    'tracked_7d': tracked,
+                    'best_gain': round(float(row.best_gain), 2) if row.best_gain else None,
+                    'worst_gain': round(float(row.worst_gain), 2) if row.worst_gain else None
+                })
+            
+            return jsonify({
+                'period_days': days,
+                'symbols': symbols
+            }), 200
     
     except Exception as e:
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500

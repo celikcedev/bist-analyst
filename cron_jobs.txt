@@ -39,6 +39,16 @@ PROJECT=/Users/ademcelik/Desktop/bist_analyst
 # -------------------------------------------------------------------------
 0 9 * * * $PYTHON $PROJECT/health_check.py >> $PROJECT/logs/cron_health.log 2>&1
 
+# -------------------------------------------------------------------------
+# 6. GÜNLÜK GÖREV: Performans Takibi (Hafta içi 19:00)
+# -------------------------------------------------------------------------
+# Sinyal performansını takip et (+1d, +3d, +7d fiyat değişimleri)
+# Kapanış verisi çekildikten sonra çalışır
+0 19 * * 1-5 $PYTHON $PROJECT/scripts/track_performance.py >> $PROJECT/logs/cron_performance.log 2>&1
+
+# Haftalık Telegram performans raporu (Cuma 19:30)
+30 19 * * 5 $PYTHON $PROJECT/scripts/track_performance.py --telegram >> $PROJECT/logs/cron_performance.log 2>&1
+
 # =========================================================================
 # NOT: 
 # - Smart scheduler otomatik olarak yarım gün/normal gün kontrol eder
