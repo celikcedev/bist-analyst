@@ -32,7 +32,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install --upgrade --no-cache-dir git+https://github.com/StreamAlpha/tvdatafeed.git
+    pip install --upgrade --no-cache-dir tvdatafeed
 
 # ============================================================================
 # Stage 2: Runtime
