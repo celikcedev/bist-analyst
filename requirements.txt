@@ -2,7 +2,6 @@ pandas
 sqlalchemy>=2.0
 psycopg2-binary
 tradingview-screener
-tvdatafeed
 numpy
 beautifulsoup4
 requests
@@ -15,4 +14,8 @@ gunicorn
 pyjwt
 bcrypt
 python-telegram-bot
+yfinance
+
+# tvdatafeed - Install from GitHub
+# pip install --upgrade --no-cache-dir git+https://github.com/StreamAlpha/tvdatafeed.git
 

@@ -18,6 +18,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    git \
     postgresql-client \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -30,7 +31,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements.txt && \
+    pip install --upgrade --no-cache-dir git+https://github.com/StreamAlpha/tvdatafeed.git
 
 # ============================================================================
 # Stage 2: Runtime
