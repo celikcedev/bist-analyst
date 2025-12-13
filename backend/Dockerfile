@@ -30,9 +30,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy requirements and install Python dependencies
 WORKDIR /app
 COPY requirements.txt .
+# Install tvdatafeed from GitHub tarball (no git clone needed, no auth required)
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install --upgrade --no-cache-dir tvdatafeed
+    pip install --upgrade --no-cache-dir https://github.com/rongardF/tvdatafeed/archive/refs/heads/main.tar.gz
 
 # ============================================================================
 # Stage 2: Runtime
